@@ -1,0 +1,18 @@
+/* 容器居中对齐 */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* 蓝色按钮样式 */
+.blue-button {
+    background-color: blue;
+    color: white;
+    padding: 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}

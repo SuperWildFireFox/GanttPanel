@@ -1,11 +1,23 @@
-// 等待 DOM 完全加载
-document.addEventListener("DOMContentLoaded", function () {
-    // 选择 id 为 "clickButton" 的元素
-    const button = document.getElementById("clickButton");
+import 'frappe-gantt/dist/frappe-gantt.css';
+import Gantt from 'frappe-gantt';
 
-    // 添加点击事件监听器
-    button.addEventListener("click", function () {
-        // 弹出 "hello, world" 提醒
-        alert("hello, world");
-    });
-});
+const tasks = [
+    {
+        id: 'Task 1',
+        name: 'Redesign website',
+        start: '2023-09-01',
+        end: '2023-09-05',
+        progress: 20,
+        dependencies: ''
+    },
+    {
+        id: 'Task 2',
+        name: 'Develop Backend',
+        start: '2023-09-06',
+        end: '2023-09-10',
+        progress: 50,
+        dependencies: 'Task 1'
+    }
+];
+
+new Gantt("#gantt", tasks);

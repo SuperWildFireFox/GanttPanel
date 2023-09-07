@@ -1,0 +1,26 @@
+{
+  "name": "ganttpanel",
+  "version": "1.0.0",
+  "description": "以frappe_gantt为基础搭建一个基础的甘特图系统",
+  "main": "index.js",
+  "scripts": {
+    "build": "parcel build index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://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@github.com/SuperWildFireFox/GanttPanel.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SuperWildFireFox/GanttPanel/issues"
+  },
+  "homepage": "https://github.com/SuperWildFireFox/GanttPanel#readme",
+  "dependencies": {
+    "frappe-gantt": "^0.6.1"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.5"
+  }
+}

@@ -18,7 +18,8 @@
   },
   "homepage": "https://github.com/SuperWildFireFox/GanttPanel#readme",
   "dependencies": {
-    "dhtmlx-gantt": "^8.0.5"
+    "dhtmlx-gantt": "^8.0.5",
+    "firebase": "^10.3.1"
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.5"

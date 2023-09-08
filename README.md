@@ -1,2 +1,2 @@
 # GanttPanel
-以frappe_gantt为基础搭建一个基础的甘特图系统
+以dhtmlxGantt为基础搭建一个基础的甘特图系统

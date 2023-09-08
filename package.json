@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/SuperWildFireFox/GanttPanel#readme",
   "dependencies": {
-    "frappe-gantt": "^0.6.1"
+    "dhtmlx-gantt": "^8.0.5"
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.5"

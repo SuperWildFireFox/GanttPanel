@@ -7,17 +7,68 @@ body {
     /* 使用 grid 布局 */
     grid-template-rows: 1fr auto;
     /* 第一行占用所有可用空间，第二行自动适应内容高度 */
+    overflow: hidden;
 }
 
-#gantt_view {
+#ganttView {
     width: 100%;
     overflow: auto;
 }
 
 #footer {
     width: 100%;
-    /*设置固定高度*/
     height: 30px;
+    /*设置固定高度*/
     background-color: #ccc;
     /* 设置背景色以区分 footer */
+    align-items: stretch;
+    /* 让子元素填满高度 */
+    padding-bottom: 1px;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+
+#footer::-webkit-scrollbar {
+    display: none;
+    /* Chrome and Safari */
+}
+
+#footer {
+    scrollbar-width: thin;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE 10+ */
+}
+
+
+.dataBtn {
+    height: 100%;
+    border: none;
+    /* 去掉全部边框 */
+    border-right: 1px solid #491313;
+    /* 仅保留右边框 */
+    margin: 0;
+    /* 去掉与左右元素的间隔 */
+    padding: 0 10px;
+    /* 左右两边留 10px，因此总宽度为文字宽度 + 20px */
+    text-align: center;
+    /* 内部文字居中 */
+    background-color: transparent;
+    /* 可选：去掉背景颜色 */
+    flex-shrink: 0;
+    /* 防止收缩 */
+}
+
+#addBtn {
+    margin: 0;
+    height: 100%;
+    border: none;
+    font-size: 24px;
+    /* 加大字号 */
+    font-weight: bold;
+    /* 加粗 */
+    background-color: transparent;
+    /* 去掉背景颜色 */
 }

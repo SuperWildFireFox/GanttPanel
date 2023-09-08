@@ -8,14 +8,20 @@
 </head>
 
 <body>
+    <div id="passDialog" style="display:none;">
+        <label for="passDialogInput">请输入私钥：</label>
+        <textarea id="passDialogInput" rows="4" cols="50"></textarea>
+        <button id="passDialogButton">提交</button>
+    </div>
     <div id="ganttView">
         <link rel="stylesheet" type="text/css" href="./node_modules/dhtmlx-gantt/codebase/dhtmlxgantt.css">
         <div id="ganttHere" style="width:100%; height:100%;"></div>
-        <script src="./script.js"></script>
     </div>
     <div id="footer">
         <button id="defaultBtn" class="dataBtn">默认数据</button><button id="addBtn">+</button>
     </div>
 </body>
+<script src="./js/ganttScript.js"></script>
+<script src="./js/encryptScript.js"></script>
 
 </html>

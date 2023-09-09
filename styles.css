@@ -72,3 +72,22 @@ body {
     background-color: transparent;
     /* 去掉背景颜色 */
 }
+
+#passDialog {
+    position: fixed;
+    /* Fixed position */
+    top: 0;
+    left: 0;
+    width: 100%;
+    /* Full width */
+    height: 100%;
+    /* Full height */
+    background-color: rgba(255, 255, 255, 1);
+    /* Black background with opacity */
+    z-index: 9999;
+    /* Make sure it does not overlap */
+    display: flex;
+    /* Use flexbox for centering contents */
+    justify-content: center;
+    align-items: center;
+}

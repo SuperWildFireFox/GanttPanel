@@ -22,30 +22,59 @@ function decryptAES(key, encryptedText) {
 }
 
 // 检查私钥是否能成功解密数据
-function checkKey() {
+function checkKey(privateKeyPem) {
+    if (typeof privateKeyPem != "string") {
+        return;
+    }
+    function ensureNewline(str) {
+        let result = str;
+        if (!result.startsWith("\n")) {
+            result = "\n" + result;
+        }
+        if (!result.endsWith("\n")) {
+            result += "\n";
+        }
+        return result;
+    }
+
     try {
         //格式要求很严格，开头与结尾的换行都不能缺
-        const enteredPrivateKeyPem = '\n' + document.getElementById('passDialogInput').value;
-        // console.log('私钥:', enteredPrivateKeyPem);
+        const enteredPrivateKeyPem = ensureNewline(privateKeyPem);
+        console.log('私钥:', enteredPrivateKeyPem);
         const enteredPrivateKey = forge.pki.privateKeyFromPem(enteredPrivateKeyPem);
-        // console.log('私钥对象:', enteredPrivateKey);
+        console.log('私钥对象:', enteredPrivateKey);
 
         const decryptedAESKey = decryptRSA(enteredPrivateKey, encryptedAESKey);
-        // console.log('成功解密 AES 密钥:', decryptedAESKey);
+        console.log('成功解密 AES 密钥:', decryptedAESKey);
         const decryptedFirebaseConfig = decryptAES(decryptedAESKey, encryptedFirebaseConfig);
-        // console.log('成功解密 firebaseConfig 数据:', decryptedFirebaseConfig);
-
-        document.cookie = `privateKey=${encodeURIComponent(enteredPrivateKeyPem)};`;
+        console.log('成功解密 firebaseConfig 数据:', decryptedFirebaseConfig);
+        const maxExpires = new Date(2147483647000).toUTCString();
+        document.cookie = `privateKey=${encodeURIComponent(enteredPrivateKeyPem)}; expires=` + maxExpires;
         document.getElementById('passDialog').style.display = 'none';
-        // console.log('成功解密:', JSON.parse(decryptedFirebaseConfig));
+        console.log('成功解密:', JSON.parse(decryptedFirebaseConfig));
     } catch (e) {
-        // console.log(e)
+        console.log(e)
         alert('解密失败或密钥错误');
-        document.getElementById('passDialog').style.display = 'block';
+        document.getElementById('passDialog').style.display = 'flex';
     }
 }
 document.addEventListener('DOMContentLoaded', (event) => {
     const button = document.getElementById("passDialogButton");
+    button.addEventListener('click', function () {
+        const fileInput = document.getElementById('passDialogFile');
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('请上传密匙文件');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const privateKeyPem = e.target.result;
+            checkKey(privateKeyPem);
+        };
+        reader.readAsText(file);
+    });
+
     button.addEventListener('click', checkKey);
 });
 
@@ -55,9 +84,9 @@ window.onload = function () {
 
     if (cookiePrivateKey) {
         const privateKeyPem = decodeURIComponent(cookiePrivateKey.split('=')[1]);
-        document.getElementById('passDialogInput').value = privateKeyPem;
-        checkKey();
+        console.log('cookie中的私钥:', privateKeyPem);
+        checkKey(privateKeyPem);
     } else {
-        document.getElementById('passDialog').style.display = 'block';
+        document.getElementById('passDialog').style.display = 'flex';
     }
 };

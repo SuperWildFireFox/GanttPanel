@@ -24,14 +24,21 @@ function initGlobalPanelNames(d) {
             panel_name: "新面板"
         };
     }
-    selected_panel_button_id = Object.keys(d)[0];
 
     // 创建底部按钮
     for (const [key, value] of Object.entries(d)) {
         addFooterButton(key, value);
     }
     // 将第一个被选择的按钮背景颜色变白
-    changeSelectedPanelButtonColor(selected_panel_button_id);
+    changeSelectedPanelButtonColor(Object.keys(d)[0]);
+    // 加载第一个按钮的数据
+    loadDataInPanel(Object.keys(d)[0]);
+}
+
+function loadDataInPanel(panel_id) {
+    /* 将panel_id对应的数据加载到gantt中 */
+    gantt.clearAll();
+    gantt.parse(convertPanelData2Gantt(global_panel_names[panel_id]));
 }
 
 
@@ -83,7 +90,10 @@ function finalize(button, old_name) {
     } else {
         //将按钮的名称更新到global_panel_names中
         const panel_id = button.id.split("#")[1];
-        global_panel_names[panel_id].panel_name = button.innerHTML;
+        if (global_panel_names[panel_id] != undefined) {
+            global_panel_names[panel_id].panel_name = button.innerHTML;
+            loadDataInPanel(panel_id);
+        }
     }
     button.removeEventListener('keydown', null);
     button.removeEventListener('blur', null);
@@ -104,6 +114,7 @@ function addFooterButton(panel_id, panel_info) {
     // 当用户双击按钮时，重新使其可编辑
     newBtn.addEventListener('dblclick', function () {
         enableEdit(newBtn);
+        loadDataInPanel(panel_id);
     });
     // 当用户右键是，弹出是否删除的提示
     newBtn.addEventListener('contextmenu', function (event) {
@@ -125,10 +136,13 @@ function addFooterButton(panel_id, panel_info) {
     });
     // 点击事件
     newBtn.addEventListener('click', function () {
+        // 删除所有选区
         window.getSelection().removeAllRanges();
         // 刷新数据
         let panel_id = this.id.split("#")[1];
-        gantt.parse(convertPanelData2Gantt(global_panel_names[panel_id]));
+        loadDataInPanel(panel_id);
+        // 选择按钮
+        changeSelectedPanelButtonColor(panel_id);
     });
 
     // 鼠标悬浮文本颜色变灰
@@ -154,6 +168,7 @@ function changeSelectedPanelButtonColor(panel_id) {
        只用传面板id即可
     */
     // 遍历footer下的所有按钮，将背景颜色变为透明
+    selected_panel_button_id = panel_id;
     const footer = document.getElementById("footer");
     const footerBtns = footer.getElementsByTagName("button");
     for (let i = 0; i < footerBtns.length; i++) {
@@ -193,24 +208,12 @@ function convertPanelData2Gantt(panel_data) {
     };
 
     for (const [key, value] of Object.entries(panel_data.data)) {
-        gantt_data.data.push({
-            id: key,
-            text: value.text,
-            start_date: value.start_date,
-            duration: value.duration,
-            progress: value.progress
-        });
+        gantt_data.data.push(value);
     }
 
     for (const [key, value] of Object.entries(panel_data.links)) {
-        gantt_data.links.push({
-            id: key,
-            source: value.source,
-            target: value.target,
-            type: value.type
-        });
+        gantt_data.links.push(value);
     }
-
     return gantt_data;
 }
 
@@ -219,49 +222,43 @@ var global_panel_names = {}
 var selected_panel_button_id = null
 /* 初始化global_panel_names */
 initGlobalPanelNames(global_panel_names);
-
-gantt.parse({
-    data: [
-    ],
-    links: [
-    ]
-});
 gantt.attachEvent("onAfterTaskAdd", function (id, task) {
-    console.log("New task added: ", task);
-    printCurrentData();
+    /* task 
+    id: 任务id
+    start_date: 开始时间 Sun Sep 10 2023 00:00:00 GMT+0800 (中国标准时间),
+    text:任务文本
+    duration: 任务持续时间,天
+    如果为子任务，则有 parent: 父任务id
+    */
+    //在这一步，selected_panel_button_id一定不为null
+    const panel_data = global_panel_names[selected_panel_button_id];
+    panel_data.data[id] = task;
 });
 
 gantt.attachEvent("onAfterTaskUpdate", function (id, task) {
-    console.log("Task updated: ", task);
-    printCurrentData();
+    const panel_data = global_panel_names[selected_panel_button_id];
+    panel_data.data[id] = task;
 });
 
 gantt.attachEvent("onAfterTaskDelete", function (id) {
-    console.log("Task deleted: ", id);
-    printCurrentData();
+    const panel_data = global_panel_names[selected_panel_button_id];
+    delete panel_data.data[id];
 });
 
 gantt.attachEvent("onAfterLinkAdd", function (id, link) {
-    console.log("New link added: ", link);
-    printCurrentData();
+    const panel_data = global_panel_names[selected_panel_button_id];
+    panel_data.links[id] = link;
 });
 
 gantt.attachEvent("onAfterLinkUpdate", function (id, link) {
-    console.log("Link updated: ", link);
-    printCurrentData();
+    const panel_data = global_panel_names[selected_panel_button_id];
+    panel_data.links[id] = link;
 });
 
 gantt.attachEvent("onAfterLinkDelete", function (id) {
-    console.log("Link deleted: ", id);
-    printCurrentData();
+    const panel_data = global_panel_names[selected_panel_button_id];
+    delete panel_data.links[id];
 });
-
-function printCurrentData() {
-    const currentData = gantt.serialize();
-    console.log("Current tasks: ", currentData.data);
-    console.log("Current links: ", currentData.links);
-}
-
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -272,7 +269,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // 防止页面本身的滚动
         event.preventDefault();
     });
-
 
 
     /* 为按钮添加点击事件 */

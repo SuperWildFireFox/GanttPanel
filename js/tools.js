@@ -20,6 +20,17 @@ export function getPreviousKey(obj, targetKey) {
     return keys[index - 1];
 }
 
+export function getNextKey(obj, targetKey) {
+    /* 获取对象中指定键的后一个键 */
+    const keys = Object.keys(obj);
+    const index = keys.indexOf(targetKey);
+    // 如果键不存在或者是最后一个键，则返回 null
+    if (index < 0 || index === keys.length - 1) return null;
+
+    // 返回后一个键
+    return keys[index + 1];
+}
+
 export function filterNonDollarFields(obj) {
     /* 过滤掉对象中以 $ 开头的键 */
     const newObj = {};

@@ -2,7 +2,7 @@ import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import { Gantt } from "dhtmlx-gantt";
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, get, child, update } from "firebase/database";
-import { randomString, getPreviousKey, filterNonDollarFields, convertDataToString, convertStringToData } from "./tools.js";
+import { randomString, getPreviousKey, filterNonDollarFields, convertDataToString, convertStringToData, getNextKey } from "./tools.js";
 import log from "node-forge/lib/log.js";
 
 /* gantt是全局对象，所有的控制都针对它 */
@@ -170,6 +170,7 @@ function addFooterButton(panel_id, panel_info) {
     // 当用户右键是，弹出是否删除的提示
     newBtn.addEventListener('contextmenu', function (event) {
         let previousPanelId = getPreviousKey(global_panel_data, panel_id);
+        let nextPanelId = getNextKey(global_panel_data, panel_id);
         event.preventDefault();
         const userConfirmed = confirm("确定要删除该面板吗（该决定不可撤销）？");
         if (userConfirmed) {
@@ -184,8 +185,11 @@ function addFooterButton(panel_id, panel_info) {
             //删除按钮
             newBtn.remove();
             // 将主页面用上一个页面填充，如果什么都没有则创建一个空数据
-            if (previousPanelId === null) {
+            if (previousPanelId === null && nextPanelId === null) {
                 insertEmptyDataPanel();
+            } else if (previousPanelId === null) {
+                loadDataInPanel(nextPanelId);
+                changeSelectedPanelButtonColor(nextPanelId);
             } else {
                 loadDataInPanel(previousPanelId);
                 changeSelectedPanelButtonColor(previousPanelId);

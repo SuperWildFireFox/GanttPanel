@@ -6,6 +6,8 @@ const encryptedFirebaseConfig = 'dVz/EsAY97tOih1THNWRSAwAL09EeQotpWz2ZOLQtiSzbAn
 //RSA加密后的AES密钥
 const encryptedAESKey = 'T3QYRNVa/Ov1ETQ24uKI36hJYxWcRNKkk0ZnstncymXkAa7jd9Zd1elwlOeOGgxQaWm0W4hGiIM41uUtUGEWpj0Ds0iF3+YdyP9JPzBm6gLaUDuD/rmDTXF84Tj/HyDXBHTGAxdNUu0QOap3Nve7DbHcHlfiGdV+g6MbBSsZwoXV5cXxmMdCj4rmKdFXSBIDmW5yQZYqdf7Gxbavl5zOdg861aMhaaIfuBBkZ11qODo4kFDkI+ZlUURoq/Cxq1BGET+ck08gPLi5TGZyD5WVQRZ70rFvqfli2KHilX4umZzT8R8X1txDFpIGUIfDbYhrSooy3cszH860j4zMoOrbNw==';  // 使用 RSA 加密后的 AES 密钥
 
+var firebaseConfig = null;
+
 // 解密 AES 密钥
 function decryptRSA(privateKey, encryptedKey) {
     const decoded = forge.util.decode64(encryptedKey);
@@ -51,7 +53,12 @@ function checkKey(privateKeyPem) {
         const maxExpires = new Date(2147483647000).toUTCString();
         document.cookie = `privateKey=${encodeURIComponent(enteredPrivateKeyPem)}; expires=` + maxExpires;
         document.getElementById('passDialog').style.display = 'none';
-        console.log('成功解密:', JSON.parse(decryptedFirebaseConfig));
+        console.log('成功解密:');
+        firebaseConfig = JSON.parse(decryptedFirebaseConfig);
+        //创建自定义事件，以供后续代码触发
+        const event = new CustomEvent('firebaseConfigReady', { "detail": firebaseConfig });
+        // 触发事件
+        window.dispatchEvent(event);
     } catch (e) {
         console.log(e)
         alert('解密失败或密钥错误');

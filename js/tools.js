@@ -19,3 +19,40 @@ export function getPreviousKey(obj, targetKey) {
     // 返回前一个键
     return keys[index - 1];
 }
+
+export function filterNonDollarFields(obj) {
+    /* 过滤掉对象中以 $ 开头的键 */
+    const newObj = {};
+    for (const key in obj) {
+        if (!key.startsWith('$')) {
+            newObj[key] = obj[key];
+        }
+    }
+    return newObj;
+}
+
+export function convertDataToString(obj) {
+    const newObj = { ...obj };
+    if (newObj.start_date instanceof Date) {
+        newObj.start_date = newObj.start_date.toString();
+    }
+
+    if (newObj.end_date instanceof Date) {
+        newObj.end_date = newObj.end_date.toString();
+    }
+    return newObj;
+}
+
+export function convertStringToData(obj) {
+    const newObj = { ...obj };
+    for (const key in newObj) {
+        if (typeof newObj[key].start_date === 'string') {
+            newObj[key].start_date = new Date(newObj[key].start_date);
+        }
+
+        if (typeof newObj[key].end_date === 'string') {
+            newObj[key].end_date = new Date(newObj[key].end_date);
+        }
+    }
+    return newObj;
+}

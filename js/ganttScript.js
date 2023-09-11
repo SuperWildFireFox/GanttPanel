@@ -1,6 +1,9 @@
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import { Gantt } from "dhtmlx-gantt";
-import { randomString, getPreviousKey } from "./tools.js";
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, set, get, child, update } from "firebase/database";
+import { randomString, getPreviousKey, filterNonDollarFields, convertDataToString, convertStringToData } from "./tools.js";
+import log from "node-forge/lib/log.js";
 
 /* gantt是全局对象，所有的控制都针对它 */
 gantt.config.xml_date = "%Y-%m-%d %H:%i";
@@ -11,34 +14,74 @@ gantt.config.scales = [
 ];
 gantt.init("ganttHere");
 
-function initGlobalPanelNames(d) {
-    /* 初始化global_panel_names */
+const firebase_prefix = "gantt/"
+const global_panel_data_prefix = firebase_prefix + "global_panel_data/"
+var firebaseConfig = null
 
-    // 检查对象是否为空
-    if (Object.keys(d).length === 0) {
-        // 对象为空，添加默认键和值
-        const default_panel_id = randomString(16);
-        d[default_panel_id] = {
-            data: {},
-            links: {},
-            panel_name: "新面板"
-        };
-    }
 
-    // 创建底部按钮
-    for (const [key, value] of Object.entries(d)) {
-        addFooterButton(key, value);
-    }
-    // 将第一个被选择的按钮背景颜色变白
-    changeSelectedPanelButtonColor(Object.keys(d)[0]);
-    // 加载第一个按钮的数据
-    loadDataInPanel(Object.keys(d)[0]);
+function initGlobalPanelData() {
+    /* 初始化global_panel_data */
+
+    // 初始化firebase
+    // console.log(firebaseConfig)
+    firebaseApp = initializeApp(firebaseConfig);
+    firebaseDatabase = getDatabase(firebaseApp);
+    // 从firebase中读取数据
+    const global_panel_data_ref = ref(firebaseDatabase, global_panel_data_prefix);
+    get(global_panel_data_ref).then((snapshot) => {
+        const data = snapshot.val();
+        global_panel_data = data;
+        if (global_panel_data == null) {
+            global_panel_data = {}
+        }
+        //以key值遍历global_panel_data
+        for (const key of Object.keys(global_panel_data)) {
+            if (global_panel_data[key].data == undefined) {
+                global_panel_data[key].data = {}
+            } else {
+                global_panel_data[key].data = convertStringToData(global_panel_data[key].data);
+            }
+            if (global_panel_data[key].links == undefined) {
+                global_panel_data[key].links = {}
+            }
+        }
+
+        // 检查对象是否为空
+        if (Object.keys(global_panel_data).length === 0) {
+            // 对象为空，添加默认键和值
+            const default_panel_id = randomString(16);
+            global_panel_data[default_panel_id] = {
+                data: {},
+                links: {},
+                panel_name: "新面板"
+            };
+            //将数据上传到数据库
+            set(ref(firebaseDatabase, global_panel_data_prefix + default_panel_id), global_panel_data[default_panel_id]).then(() => {
+                console.log("成功将默认面板上传到数据库");
+            }).catch((error) => {
+                console.error(error);
+            });
+        }
+
+        // 创建底部按钮
+        for (const [key, value] of Object.entries(global_panel_data)) {
+            addFooterButton(key, value);
+        }
+        // 将第一个被选择的按钮背景颜色变白
+        changeSelectedPanelButtonColor(Object.keys(global_panel_data)[0]);
+        // 加载第一个按钮的数据
+        loadDataInPanel(Object.keys(global_panel_data)[0]);
+
+
+    }).catch((error) => {
+        console.error(error);
+    });
 }
 
 function loadDataInPanel(panel_id) {
     /* 将panel_id对应的数据加载到gantt中 */
     gantt.clearAll();
-    gantt.parse(convertPanelData2Gantt(global_panel_names[panel_id]));
+    gantt.parse(convertPanelData2Gantt(global_panel_data[panel_id]));
 }
 
 
@@ -88,11 +131,19 @@ function finalize(button, old_name) {
     if (button.innerHTML.trim() === '') {
         button.innerHTML = old_name;
     } else {
-        //将按钮的名称更新到global_panel_names中
+        //将按钮的名称更新到global_panel_data中
         const panel_id = button.id.split("#")[1];
-        if (global_panel_names[panel_id] != undefined) {
-            global_panel_names[panel_id].panel_name = button.innerHTML;
+        if (global_panel_data[panel_id] != undefined) {
+            global_panel_data[panel_id].panel_name = button.innerHTML;
             loadDataInPanel(panel_id);
+            //将更改上传到数据库
+            const updates = {}
+            updates[global_panel_data_prefix + panel_id + "/panel_name"] = global_panel_data[panel_id].panel_name;
+            update(ref(firebaseDatabase), updates).then(() => {
+                console.log("成功将名称的变更更新数据库");
+            }).catch((error) => {
+                console.error(error);
+            });
         }
     }
     button.removeEventListener('keydown', null);
@@ -118,19 +169,26 @@ function addFooterButton(panel_id, panel_info) {
     });
     // 当用户右键是，弹出是否删除的提示
     newBtn.addEventListener('contextmenu', function (event) {
-        let previousPanelId = getPreviousKey(global_panel_names, panel_id);
+        let previousPanelId = getPreviousKey(global_panel_data, panel_id);
         event.preventDefault();
         const userConfirmed = confirm("确定要删除该面板吗（该决定不可撤销）？");
         if (userConfirmed) {
             //删除数据
-            delete global_panel_names[panel_id];
+            delete global_panel_data[panel_id];
+            set(ref(firebaseDatabase, global_panel_data_prefix + panel_id), null).then(() => {
+                console.log("成功删除数据");
+            }).catch((error) => {
+                console.error(error);
+            });
+
             //删除按钮
             newBtn.remove();
             // 将主页面用上一个页面填充，如果什么都没有则创建一个空数据
             if (previousPanelId === null) {
-
+                insertEmptyDataPanel();
             } else {
-
+                loadDataInPanel(previousPanelId);
+                changeSelectedPanelButtonColor(previousPanelId);
             }
         }
     });
@@ -181,7 +239,7 @@ function changeSelectedPanelButtonColor(panel_id) {
 
 function insertEmptyDataPanel() {
     /* 在gantt中插入一个空的数据面板
-    会同时改变页面与global_panel_names内的数据
+    会同时改变页面与global_panel_data内的数据
     */
     // 自动生成按钮ID
     const new_panel_id = randomString(16);
@@ -190,7 +248,14 @@ function insertEmptyDataPanel() {
         links: {},
         panel_name: "新面板"
     };
-    global_panel_names[new_panel_id] = new_panel_data;
+    global_panel_data[new_panel_id] = new_panel_data;
+    //将数据上传到数据库
+    set(ref(firebaseDatabase, global_panel_data_prefix + new_panel_id), new_panel_data).then(() => {
+        console.log("成功将新面板上传到数据库");
+    }).catch((error) => {
+        console.error(error);
+    });
+
     //添加按钮
     addFooterButton(new_panel_id, new_panel_data);
     //选定该按钮
@@ -206,22 +271,32 @@ function convertPanelData2Gantt(panel_data) {
         data: [],
         links: []
     };
-
-    for (const [key, value] of Object.entries(panel_data.data)) {
-        gantt_data.data.push(value);
+    if (panel_data.data != undefined) {
+        for (const [key, value] of Object.entries(panel_data.data)) {
+            gantt_data.data.push(value);
+        }
     }
 
-    for (const [key, value] of Object.entries(panel_data.links)) {
-        gantt_data.links.push(value);
+    if (panel_data.links != undefined) {
+        for (const [key, value] of Object.entries(panel_data.links)) {
+            gantt_data.links.push(value);
+        }
     }
     return gantt_data;
 }
 
 
-var global_panel_names = {}
+var global_panel_data = {}
 var selected_panel_button_id = null
-/* 初始化global_panel_names */
-initGlobalPanelNames(global_panel_names);
+var firebaseApp = null;
+var firebaseDatabase = null;
+/* 初始化global_panel_data */
+window.addEventListener('firebaseConfigReady', function (e) {
+    firebaseConfig = e.detail;
+    console.log("firebaseConfig解密完成，正在初始化global_panel_data")
+    initGlobalPanelData(global_panel_data);
+});
+
 gantt.attachEvent("onAfterTaskAdd", function (id, task) {
     /* task 
     id: 任务id
@@ -231,33 +306,71 @@ gantt.attachEvent("onAfterTaskAdd", function (id, task) {
     如果为子任务，则有 parent: 父任务id
     */
     //在这一步，selected_panel_button_id一定不为null
-    const panel_data = global_panel_names[selected_panel_button_id];
+    task = filterNonDollarFields(task);
+    const panel_data = global_panel_data[selected_panel_button_id];
     panel_data.data[id] = task;
+    //将更改上传到数据库
+    task = convertDataToString(task);
+    set(ref(firebaseDatabase, global_panel_data_prefix + selected_panel_button_id + "/data/" + id), task).then(() => {
+        console.log("成功将任务创建数据上传到数据库");
+    }).catch((error) => {
+        console.error(error);
+    });
 });
 
 gantt.attachEvent("onAfterTaskUpdate", function (id, task) {
-    const panel_data = global_panel_names[selected_panel_button_id];
+    task = filterNonDollarFields(task);
+    const panel_data = global_panel_data[selected_panel_button_id];
     panel_data.data[id] = task;
+    //将更改上传到数据库
+    task = convertDataToString(task);
+    set(ref(firebaseDatabase, global_panel_data_prefix + selected_panel_button_id + "/data/" + id), task).then(() => {
+        console.log("成功将任务更新数据上传到数据库");
+    }).catch((error) => {
+        console.error(error);
+    });
 });
 
 gantt.attachEvent("onAfterTaskDelete", function (id) {
-    const panel_data = global_panel_names[selected_panel_button_id];
+    const panel_data = global_panel_data[selected_panel_button_id];
     delete panel_data.data[id];
+    set(ref(firebaseDatabase, global_panel_data_prefix + selected_panel_button_id + "/data/" + id), null).then(() => {
+        console.log("成功将任务删除指令上传到数据库");
+    }).catch((error) => {
+        console.error(error);
+    });
 });
 
 gantt.attachEvent("onAfterLinkAdd", function (id, link) {
-    const panel_data = global_panel_names[selected_panel_button_id];
+    link = filterNonDollarFields(link);
+    const panel_data = global_panel_data[selected_panel_button_id];
     panel_data.links[id] = link;
+    set(ref(firebaseDatabase, global_panel_data_prefix + selected_panel_button_id + "/links/" + id), link).then(() => {
+        console.log("成功将链接创建数据上传到数据库");
+    }).catch((error) => {
+        console.error(error);
+    });
 });
 
 gantt.attachEvent("onAfterLinkUpdate", function (id, link) {
-    const panel_data = global_panel_names[selected_panel_button_id];
+    link = filterNonDollarFields(link);
+    const panel_data = global_panel_data[selected_panel_button_id];
     panel_data.links[id] = link;
+    set(ref(firebaseDatabase, global_panel_data_prefix + selected_panel_button_id + "/links/" + id), link).then(() => {
+        console.log("成功将链接更新数据上传到数据库");
+    }).catch((error) => {
+        console.error(error);
+    });
 });
 
 gantt.attachEvent("onAfterLinkDelete", function (id) {
-    const panel_data = global_panel_names[selected_panel_button_id];
+    const panel_data = global_panel_data[selected_panel_button_id];
     delete panel_data.links[id];
+    set(ref(firebaseDatabase, global_panel_data_prefix + selected_panel_button_id + "/links/" + id), null).then(() => {
+        console.log("成功将链接删除数据上传到数据库");
+    }).catch((error) => {
+        console.error(error);
+    });
 });
 
 

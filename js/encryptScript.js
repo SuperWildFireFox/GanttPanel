@@ -90,7 +90,7 @@ window.onload = function () {
     const cookiePrivateKey = getCookie("privateKey");
 
     if (cookiePrivateKey) {
-        const privateKeyPem = decodeURIComponent(cookiePrivateKey.split('=')[1]);
+        const privateKeyPem = decodeURIComponent(cookiePrivateKey);
         console.log('cookie中的私钥:', privateKeyPem);
         checkKey(privateKeyPem);
     } else {

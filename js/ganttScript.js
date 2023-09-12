@@ -429,7 +429,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.addEventListener("mousemove", function (event) {
         if (event.clientX >= window.innerWidth - 50) {
-            console.log("鼠标进入侧边栏")
+            // console.log("鼠标进入侧边栏")
             sidebar.style.right = "0px";
         }
     });
@@ -466,3 +466,4 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+

@@ -68,12 +68,15 @@ export function convertStringToData(obj) {
     return newObj;
 }
 
-// 设置cookie，默认过期时间1年
+//
 export function setCookie(name, value) {
     const date = new Date();
     date.setFullYear(date.getFullYear() + 1); // 设置为从现在起到未来的一年时间
     const expires = "; expires=" + date.toUTCString();
-    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    value = encodeURIComponent(value);
+    const cookie_str = name + "=" + (value || "") + expires + "; path=/";
+    console.log(cookie_str);
+    document.cookie = cookie_str;
 }
 
 // 获取Cookie
@@ -83,7 +86,10 @@ export function getCookie(name) {
     for (let i = 0; i < ca.length; i++) {
         let c = ca[i];
         while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        if (c.indexOf(nameEQ) === 0) {
+            let value = c.substring(nameEQ.length, c.length);
+            return decodeURIComponent(value);
+        }
     }
     return null;
 }

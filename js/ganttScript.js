@@ -2,16 +2,43 @@ import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import { Gantt } from "dhtmlx-gantt";
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, get, child, update } from "firebase/database";
-import { randomString, getPreviousKey, filterNonDollarFields, convertDataToString, convertStringToData, getNextKey } from "./tools.js";
+import {
+    randomString, getPreviousKey, filterNonDollarFields,
+    convertDataToString, convertStringToData, getNextKey,
+    setCookie, getCookie
+} from "./tools.js";
 import log from "node-forge/lib/log.js";
 
 /* gantt是全局对象，所有的控制都针对它 */
 gantt.config.xml_date = "%Y-%m-%d %H:%i";
+gantt.config.scale_height = 54;
 gantt.i18n.setLocale("cn"); //设置中文
 //时间尺度设置
-gantt.config.scales = [
-    { unit: "day", step: 1, format: "%M %j号, 星期%D" }
-];
+const predefine_time_scale = {
+    "hour": [
+        { unit: "hour", step: 2, format: "%G点" },
+        { unit: "day", step: 1, format: "%M %j号, 星期%D" },
+    ],
+    "day": [
+        { unit: "day", step: 1, format: "%M %j号, 星期%D" },
+        { unit: "month", step: 1, format: "%M" },
+    ],
+    "month": [
+        { unit: "month", step: 1, format: "%M" },
+        { unit: "year", step: 1, format: "%Y" },
+    ]
+}
+
+var default_time_scale = "hour";
+var cookie_time_scale = getCookie("time_scale")
+if (cookie_time_scale == null) {
+    setCookie("time_scale", default_time_scale);
+    cookie_time_scale = default_time_scale;
+} else {
+    default_time_scale = cookie_time_scale;
+}
+// console.log(predefine_time_scale[cookie_time_scale])
+gantt.config.scales = predefine_time_scale[cookie_time_scale];
 gantt.init("ganttHere");
 
 const firebase_prefix = "gantt/"
@@ -393,5 +420,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
     addBtn.addEventListener("click", function () {
         insertEmptyDataPanel();
+    });
+});
+
+// 侧边栏
+document.addEventListener("DOMContentLoaded", function () {
+    const sidebar = document.getElementById("sidebar");
+
+    document.addEventListener("mousemove", function (event) {
+        if (event.clientX >= window.innerWidth - 50) {
+            console.log("鼠标进入侧边栏")
+            sidebar.style.right = "0px";
+        }
+    });
+
+    sidebar.addEventListener("mouseleave", function () {
+        sidebar.style.right = "-60px";
+    });
+
+    document.addEventListener("click", function (event) {
+        if (!sidebar.contains(event.target)) {
+            sidebar.style.right = "-60px";
+        }
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll('.sidebar-button');
+    buttons.forEach((button) => {
+        // 获取元素的 id
+        const id = button.id;
+        var predefine_time_scale_key = null;
+        if (id == "siderbar-button-hour") {
+            predefine_time_scale_key = "hour";
+        } else if (id == "siderbar-button-day") {
+            predefine_time_scale_key = "day";
+        } else if (id == "siderbar-button-month") {
+            predefine_time_scale_key = "month";
+        }
+        // 为元素添加点击事件监听器
+        button.addEventListener('click', function () {
+            setCookie("time_scale", predefine_time_scale_key);
+            gantt.config.scales = predefine_time_scale[predefine_time_scale_key];
+            gantt.render()
+        });
     });
 });

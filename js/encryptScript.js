@@ -1,4 +1,5 @@
 const forge = require('node-forge');
+import { setCookie, getCookie } from "./tools.js";
 
 // 预先加密的数据和 AES 密钥
 //AES加密后的firebaseConfig
@@ -42,16 +43,15 @@ function checkKey(privateKeyPem) {
     try {
         //格式要求很严格，开头与结尾的换行都不能缺
         const enteredPrivateKeyPem = ensureNewline(privateKeyPem);
-        console.log('私钥:', enteredPrivateKeyPem);
+        setCookie("privateKey", enteredPrivateKeyPem)
+        // console.log('私钥:', enteredPrivateKeyPem);
         const enteredPrivateKey = forge.pki.privateKeyFromPem(enteredPrivateKeyPem);
-        console.log('私钥对象:', enteredPrivateKey);
+        // console.log('私钥对象:', enteredPrivateKey);
 
         const decryptedAESKey = decryptRSA(enteredPrivateKey, encryptedAESKey);
-        console.log('成功解密 AES 密钥:', decryptedAESKey);
+        // console.log('成功解密 AES 密钥:', decryptedAESKey);
         const decryptedFirebaseConfig = decryptAES(decryptedAESKey, encryptedFirebaseConfig);
-        console.log('成功解密 firebaseConfig 数据:', decryptedFirebaseConfig);
-        const maxExpires = new Date(2147483647000).toUTCString();
-        document.cookie = `privateKey=${encodeURIComponent(enteredPrivateKeyPem)}; expires=` + maxExpires;
+        // console.log('成功解密 firebaseConfig 数据:', decryptedFirebaseConfig);
         document.getElementById('passDialog').style.display = 'none';
         console.log('成功解密:');
         firebaseConfig = JSON.parse(decryptedFirebaseConfig);
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 // 初始化
 window.onload = function () {
-    const cookiePrivateKey = document.cookie.split('; ').find(row => row.startsWith('privateKey='));
+    const cookiePrivateKey = getCookie("privateKey");
 
     if (cookiePrivateKey) {
         const privateKeyPem = decodeURIComponent(cookiePrivateKey.split('=')[1]);

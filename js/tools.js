@@ -67,3 +67,23 @@ export function convertStringToData(obj) {
     }
     return newObj;
 }
+
+// 设置cookie，默认过期时间1年
+export function setCookie(name, value) {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 1); // 设置为从现在起到未来的一年时间
+    const expires = "; expires=" + date.toUTCString();
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+// 获取Cookie
+export function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
